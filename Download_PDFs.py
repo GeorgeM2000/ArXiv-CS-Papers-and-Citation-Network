@@ -5,17 +5,22 @@ import os
 #from PyPDF2 import PdfReader, PdfWriter
 #from io import BytesIO
 
-SAVE_DIR = "CS_Papers"
+
+paper_dirs = ['Papers 1']
+
+SAVE_DIR = "Papers 2"
 empty_papers = []
 papers_with_incorrect_type = []
 failed_papers = []
 erroneous_papers = []
+LIMIT = 9000
 
 
 
 async def download_pdf(session, paper_id, semaphore):
     async with semaphore:  # Limit concurrent requests
         try:
+            paper_id = paper_id.replace("/", "_")
             async with session.get(f"https://arxiv.org/pdf/{paper_id}") as response:
                 if response.status == 200:
                     content = await response.read()
@@ -25,35 +30,45 @@ async def download_pdf(session, paper_id, semaphore):
                             with open(f'{SAVE_DIR}/{paper_id}.pdf', "wb") as f:
                                 f.write(content)
                         else:
+                            print(f'{paper_id} has no content')
                             papers_with_incorrect_type.append(paper_id)
                     else:
+                        print(f'Empty {paper_id}')
                         empty_papers.append(paper_id)
                 else:
+                    print(f'Failed {paper_id} status {response.status}')
                     failed_papers.append((paper_id, response.status))
         except Exception as e:
             print(f"Error downloading {paper_id}: {e}")
             erroneous_papers.append(paper_id)
 
-def get_missing_paper_ids(id_file, save_dir):
+def get_missing_paper_ids(id_file):
     with open(id_file, "r") as f:
         paper_ids = {line.strip() for line in f}  # Use a set for faster lookups
 
+    print(f'Paper IDs (before): {len(paper_ids)}')
+
     # Get all filenames in the save directory (strip ".pdf" to match paper IDs)
-    existing_papers = {filename.replace(".pdf", "") for filename in os.listdir(save_dir) if filename.endswith(".pdf")}
+    existing_papers = {
+        filename.replace("_", "/").replace(".pdf", "")
+        for directory in paper_dirs  # List of directories
+        for filename in os.listdir(directory)
+        if filename.endswith(".pdf")
+    }
 
     paper_ids = list(paper_ids - existing_papers)
 
-    print(f'Paper IDs: {len(paper_ids)}'); print(f'Existing papers: {len(existing_papers)}')
+    print(f'Paper IDs (after): {len(paper_ids)}'); print(f'Existing papers (before): {len(existing_papers)}')
     
     return paper_ids # Convert back to a list
 
 
-async def download_all_papers(id_file, max_concurrent_downloads=10):
+async def download_all_papers(id_file, max_concurrent_downloads=15):
     paper_ids = get_missing_paper_ids(id_file, SAVE_DIR)
 
     semaphore = asyncio.Semaphore(max_concurrent_downloads)  # Limit concurrency
     async with aiohttp.ClientSession() as session:
-        tasks = [download_pdf(session, paper_id, semaphore) for paper_id in paper_ids]
+        tasks = [download_pdf(session, paper_id, semaphore) for paper_id in paper_ids[:LIMIT]]
         await asyncio.gather(*tasks)  # Run all downloads in parallel
 
 
@@ -61,10 +76,10 @@ async def download_all_papers(id_file, max_concurrent_downloads=10):
 if __name__ == '__main__':
 
     # Directory to save PDFs
-    #os.makedirs(SAVE_DIR, exist_ok=True)
+    os.makedirs(SAVE_DIR, exist_ok=True)
 
     # Run the script
-    id_file = "graph-v2/Node_IDs.txt"  # Update with your actual file
+    id_file = "graph-v2/Node_IDs.txt" 
     asyncio.run(download_all_papers(id_file))
 
 
