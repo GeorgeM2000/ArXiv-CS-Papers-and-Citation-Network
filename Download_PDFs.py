@@ -5,8 +5,7 @@ import os
 import time
 #from PyPDF2 import PdfReader, PdfWriter
 #from io import BytesIO
-from collections import defaultdict
-
+from collections import defaultdict, Counter
 
 
 paper_dirs = ['Papers 1', 'Papers 2', 'Papers 3', 'Papers 4', 'Papers 5', 'Papers 6']
@@ -49,15 +48,25 @@ async def download_pdf(session, paper_id, semaphore):
 
 
 def check_for_duplicates():
-    # Dictionary to track original filenames for each processed name
     filename_map = defaultdict(list)
+    filenames_with_underscore = [0, []]
 
     for directory in paper_dirs:
         for filename in os.listdir(directory):
             if filename.endswith(".pdf"):
-                processed_name = filename.replace("_", "/").replace(".pdf", "")
+                if "_" in filename:
+                    processed_name = filename.replace("_", "/").replace(".pdf", "")
+                    filenames_with_underscore[0] += 1
+                    filenames_with_underscore[1].append(processed_name)
+                else:
+                    processed_name = filename.replace(".pdf", "")
+                
                 filename_map[processed_name].append(filename)
+            else:
+                print(f'{filename} does not end with .pdf')
 
+    print(f'Filenames with an underscore: {filenames_with_underscore[0]} \nTotal filenames: {len(filename_map)}\n')
+    
     # Find duplicates (i.e., processed names with multiple original filenames)
     duplicates = {key: value for key, value in filename_map.items() if len(value) > 1}
 
@@ -68,22 +77,45 @@ def check_for_duplicates():
     else:
         print("✅ No duplicates found!")
 
+    return filenames_with_underscore[1]
+
 
 def check_validity(existing_papers, paper_ids):
-    true_positives = 0
-    missing_papers = []
+    # Check if there are papers downloaded that do not exist in the node list
+    true_positives = [0, 0]
+    missing_papers = [[], []]
+    filenames_with_slash = []
     for epaper_id in existing_papers:
         if epaper_id in paper_ids:
-            true_positives += 1
+            true_positives[0] += 1
         else:
-            missing_papers.append(epaper_id)
+            missing_papers[0].append(epaper_id)
 
-    print(f'There are {true_positives} papers that match the paper IDs in the node list')
-    if missing_papers:
-        print(missing_papers)
+    print(f'There are {true_positives[0]} papers that match the paper IDs in the node list')
+    
+    if missing_papers[0]:
+        print(f'{len(missing_papers[0])} papers do not exist in the node list')
+        print(missing_papers[0])
+
+    # Check if there are papers in the node list that were not downloaded
+    for paper_id in paper_ids:
+        if paper_id in existing_papers:
+            true_positives[1] += 1
+            if "/" in paper_id:
+                filenames_with_slash.append(paper_id)
+        else:
+            missing_papers[1].append(paper_id)
+
+    print(f'There are {true_positives[1]} papers that were successfully downloaded')
+    
+    if missing_papers[1]:
+        print(f'{len(missing_papers[1])} papers were not downloaded')
+        print(missing_papers[1])
+    
+    return filenames_with_slash
     
 
-def get_missing_paper_ids(id_file):
+def get_missing_paper_ids(id_file, filenames_with_underscore):
     with open(id_file, "r") as f:
         paper_ids = {line.strip() for line in f}  # Use a set for faster lookups
 
@@ -96,7 +128,10 @@ def get_missing_paper_ids(id_file):
         if filename.endswith(".pdf")
     }
 
-    check_validity(existing_papers, paper_ids)
+    filenames_with_slash = check_validity(existing_papers, paper_ids)
+
+    if Counter(filenames_with_slash) == Counter(filenames_with_underscore):
+        print("✅ The paper IDs with a '/' in the node list are the same as the paper IDs with an underscore in the downloaded papers")
 
     paper_ids = list(paper_ids - existing_papers)
 
@@ -105,9 +140,9 @@ def get_missing_paper_ids(id_file):
     return paper_ids 
 
 
-async def download_all_papers(id_file, max_concurrent_downloads=15):
-    paper_ids = get_missing_paper_ids(id_file)
-    #time.sleep(30)
+async def download_all_papers(id_file, filenames_with_underscore, max_concurrent_downloads=15):
+    paper_ids = get_missing_paper_ids(id_file, filenames_with_underscore)
+    #time.sleep(50)
     semaphore = asyncio.Semaphore(max_concurrent_downloads)  # Limit concurrency
     async with aiohttp.ClientSession() as session:
         tasks = [download_pdf(session, paper_id, semaphore) for paper_id in paper_ids]
@@ -117,15 +152,15 @@ async def download_all_papers(id_file, max_concurrent_downloads=15):
 
 if __name__ == '__main__':
 
-    check_for_duplicates()
+    filenames_with_underscore = check_for_duplicates()
 
     # Directory to save PDFs
-    os.makedirs(SAVE_DIR, exist_ok=True)
+    #os.makedirs(SAVE_DIR, exist_ok=True)
 
 
     # Run the script
     id_file = "graph-v2/Node_IDs.txt" 
-    asyncio.run(download_all_papers(id_file))
+    asyncio.run(download_all_papers(id_file, filenames_with_underscore))
 
 
     # === Save IDs of failed papers ===

@@ -1,0 +1,119 @@
+valid_categories = {'cs.LG', 'cs.CV', 'cs.IT', 'math.IT', 'stat.ML', 'cs.AI', 'cs.CL'}
+
+len(indices_for_nodes_to_be_removed) = 33438 
+len(ids_for_nodes_to_be_removed) = 33438 
+
+len(withdrawn_paper_ids) = 33447
+len(final_withdrawn_paper_indices) = 33447 
+
+len(invalid_edges) = 40627
+len(invalid_edge_indices) = 33447
+
+len(isolated_nodes) = 15,975
+
+len(list(set(final_withdrawn_paper_indices + [idx for idx, row in df.iterrows() if row['id'] in list(isolated_nodes['paper_id'])]))) = 35232
+len(list(set(invalid_edge_indices + list(isolated_nodes.index)))) = 35232
+
+print(len(edges_data)) -> 53049
+print(len(df)) -> 53049
+
+
+This line: edge_list = graph.get_edge_list() reduces the number of nodes to 52596
+
+print(len(unique_nodes_in_edges)) -> 52596
+
+print(len(redundant_nodes)) -> 453
+
+True positives: 366792
+Total edges: 366792
+
+All nodes are present in the edge list.
+
+Counter({'Computer Science': 52184, 'Mathematics': 13790, 'Statistics': 12759})
+
+
+{'Machine Learning': 20744,
+ 'Computer Vision and Pattern Recognition': 15521,
+ 'Information Theory': 13790,
+ 'Artificial Intelligence': 7263,
+ 'Computation and Language': 6900}
+
+
+Counter({'Computer Vision and Pattern Recognition': 14011,
+         'Information Theory': 13539,
+         'Machine Learning': 12104,
+         'Artificial Intelligence': 7263,
+         'Computation and Language': 5679})
+
+
+Counter({'Machine Learning': 13589, 'Computer Vision and Pattern Recognition': 13433, 'Information Theory': 12694, 'Computation and Language': 6442, 'Artificial Intelligence': 6438})
+
+
+Mapping: {'Artificial Intelligence': 0, 'Computation and Language': 1, 'Computer Vision and Pattern Recognition': 2, 'Information Theory': 3, 'Machine Learning': 4}
+
+Counter({'4': 13589, '2': 13433, '3': 12694, '1': 6442, '0': 6438})
+
+
+
+
+Machine Learning --- Machine Learning: 136610
+Artificial Intelligence --- Machine Learning: 70120
+Information Theory --- Machine Learning: 15150
+Computation and Language --- Machine Learning: 52072
+Computer Vision and Pattern Recognition --- Machine Learning: 112346
+Artificial Intelligence --- Artificial Intelligence: 19104
+Artificial Intelligence --- Information Theory: 1612
+Information Theory --- Information Theory: 44854
+Computation and Language --- Information Theory: 296
+Computation and Language --- Computer Vision and Pattern Recognition: 15986
+Computer Vision and Pattern Recognition --- Information Theory: 2098
+Artificial Intelligence --- Computation and Language: 24220
+Computer Vision and Pattern Recognition --- Computer Vision and Pattern Recognition: 101964
+Artificial Intelligence --- Computer Vision and Pattern Recognition: 28384
+Computation and Language --- Computation and Language: 43262
+
+
+
+ML  CV & PR     IT     CL     AI
+ML       136610   112346  15150  52072  70120
+CV & PR  112346   101964   2098  15986  28384
+IT        15150     2098  44854    296   1612
+CL        52072    15986    296  43262  24220
+AI        70120    28384   1612  24220  19104
+
+
+
+
+{'Remove URLs': 1398,
+ 'Remove literal dollar signs \\$': 14,
+ 'Remove block math': 91,
+ 'Replace inline math with alphabetic content': 11478,
+ 'Remove remaining inline math': 25401,
+ 'Remove nested functions': 2106,
+ 'Remove \x08egin{...} and \\end{...} commands': 11,
+ 'Replace standalone LaTeX commands': 2981,
+ 'Remove remaining LaTeX commands and escape sequences': 2240,
+ 'Remove extraneous braces and brackets': 9608,
+ 'Fix misplaced whitespace before commas and periods': 7857,
+ 'Replace multiple commas with a single comma': 364835,
+ 'Replace multiple periods with a single period': 439061}
+
+
+
+
+ Bins: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, np.int64(4987)]
+Bin Counts:
+ Binned
+[1, 2)          12750
+[2, 4)          14364
+[4, 8)          12535
+[8, 16)          8367
+[16, 32)         3263
+[32, 64)          897
+[64, 128)         275
+[128, 256)         95
+[256, 512)         29
+[512, 1024)        13
+[1024, 2048)        6
+[2048, 4096)        1
+[4096, 4987)        1
