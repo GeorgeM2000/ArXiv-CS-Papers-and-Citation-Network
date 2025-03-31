@@ -8,6 +8,7 @@ import time
 from collections import defaultdict, Counter
 
 
+# If the number of papers to be downloaded is large, download a number of papers in separate directories
 paper_dirs = ['Papers 1', 'Papers 2', 'Papers 3', 'Papers 4', 'Papers 5', 'Papers 6']
 
 SAVE_DIR = "Papers 7"
@@ -15,7 +16,7 @@ empty_papers = []
 papers_with_incorrect_type = []
 failed_papers = []
 erroneous_papers = []
-LIMIT = 9000
+LIMIT = 9000 # Limit the number of papers to be downloaded
 
 
 
@@ -142,7 +143,6 @@ def get_missing_paper_ids(id_file, filenames_with_underscore):
 
 async def download_all_papers(id_file, filenames_with_underscore, max_concurrent_downloads=15):
     paper_ids = get_missing_paper_ids(id_file, filenames_with_underscore)
-    #time.sleep(50)
     semaphore = asyncio.Semaphore(max_concurrent_downloads)  # Limit concurrency
     async with aiohttp.ClientSession() as session:
         tasks = [download_pdf(session, paper_id, semaphore) for paper_id in paper_ids]
